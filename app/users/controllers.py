@@ -4,7 +4,7 @@ from core.services import BaseServices
 from fastapi import UploadFile
 from partners.v1.cloudflare.r2 import r2_services
 from utils import converter
-from partners.v1.resend.services import resend_services
+from partners.v1.resend.services import user_mail_services
 
 from . import schemas
 from .config import settings
@@ -21,7 +21,7 @@ class UserControllers(BaseControllers):
         data = data.model_dump()
         results = await self.service.register(data=data)
         # Send mail welcome
-        await resend_services.send_welcome_email(recipient=data["email"], fullname=data["fullname"])
+        await user_mail_services.send_welcome_email(recipient=data["email"], fullname=data["fullname"])
         return results
 
     async def login(self, data: schemas.LoginRequest) -> dict:

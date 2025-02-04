@@ -1,3 +1,4 @@
+from typing import List
 from discord_webhook import AsyncDiscordWebhook
 
 from .config import settings
@@ -68,6 +69,20 @@ class ErrorBot(BaseBot):
             f"**Status code**: {response.status_code}\n"
             f"**Request Id**: {request_id}\n"
         )
+        await self.send_message(message)
+
+    async def send_notify_email_failure(self, error_message: str, recipients: List[str]) -> None:
+        """
+        Send a notification about an email failure.
+
+        Args:
+            error_message (str): The error message describing the email failure.
+            recipients (List[str]): List of email addresses the email was trying to send to.
+
+        Returns:
+            None
+        """
+        message = f"<b>❌ Email Send Failure Notification</b>\n\n" f"<b>Error Message</b>: {error_message}\n" f"<b>Recipients</b>: {', '.join(recipients)}\n"
         await self.send_message(message)
 
 
