@@ -8,5 +8,7 @@ class Settings(BaseSettings):
     logs_path: str = Field(default="/opt/projects/app/logs/access.log")
     cors_origin: list = Field(default=["http://localhost", "http://localhost:3000", "https://eventorize.kiet.site"])
 
+    def is_production(self) -> bool:
+        return self.environment == "production"
 
 settings = Settings()
