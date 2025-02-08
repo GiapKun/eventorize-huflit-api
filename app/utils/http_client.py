@@ -1,7 +1,7 @@
 from typing import Any, Dict, Optional
 
 import httpx
-from partners.v1.discord.services import warning_bot
+from partners.v1.discord.services import error_bot
 
 from .config import settings
 
@@ -33,10 +33,10 @@ async def send(method: str, url: str, verify: bool = True, **kwargs: Any) -> htt
 
     except httpx.RequestError as exc:
         exc_list = str(exc).splitlines()
-        await warning_bot.send_warning(warning_message=exc_list[0])
+        await error_bot.alter_warning(warning_message=exc_list[0])
     except httpx.HTTPStatusError as exc:
         exc_list = str(exc).splitlines()
-        await warning_bot.send_warning(warning_message=exc_list[0])
+        await error_bot.alter_warning(warning_message=exc_list[0])
 
 
 async def get(

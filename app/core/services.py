@@ -62,7 +62,7 @@ class BaseServices:
             str: The ID of the current user.
 
         """
-        return commons.current_user
+        return commons.current_user if commons else None
 
     def get_current_user_type(self, commons: CommonsDependencies):
         """
@@ -75,7 +75,7 @@ class BaseServices:
             str: The type of the current user (e.g., admin, customer).
 
         """
-        return commons.user_type
+        return commons.user_type if commons else None
 
     def build_ownership_query(self, commons: CommonsDependencies = None) -> dict | None:
         """

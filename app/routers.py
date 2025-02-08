@@ -1,7 +1,7 @@
 from fastapi import APIRouter
+from auth import routers as auth_routers
 from modules.v1.agendas import routers as agendas_routers
 from modules.v1.events import routers as events_routers
-from modules.v1.google import routers as google_routers
 from modules.v1.health import routers as health_routers
 from modules.v1.location import routers as location_routers
 from modules.v1.orders import routers as orders_routers
@@ -51,5 +51,5 @@ api_routers.include_router(location_routers.router)
 # Payments
 api_routers.include_router(payments_routers.router)
 
-# Google
-api_routers.include_router(google_routers.router)
+# Auth
+api_routers.include_router(auth_routers.router)

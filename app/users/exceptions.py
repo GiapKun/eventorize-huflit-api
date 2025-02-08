@@ -22,3 +22,25 @@ class ErrorCode(CoreErrorCode):
     @staticmethod
     def SSOIdMismatch():
         return CustomException(type="users/sso/invalid-sso", status=400, title="Invalid SSO Information", detail="The provided SSO credentials are invalid. Please try again.")
+    
+    @staticmethod
+    def EmailAlreadyVerified():
+        return CustomException(type="auth/error/email-already-verified", status=400, title="Email Already Verified.", detail="The email address has already been verified.")
+    
+    @staticmethod
+    def OTPRequiredBeforeReset():
+        return CustomException(type="auth/otp/required", status=400, title="OTP Required Before Reset", detail="You must request an OTP before resetting your password.")
+
+    @staticmethod
+    def OTPAttemptsExceeded():
+        return CustomException(
+            type="auth/otp/max-attempts", status=400, title="Maximum attempts exceeded.", detail="You have exceeded the maximum number of OTP verification attempts. Please request a new OTP."
+        )
+
+    @staticmethod
+    def OTPExpired():
+        return CustomException(type="auth/otp/expired", status=400, title="OTP expired.", detail="The OTP has expired. Please request a new one.")
+
+    @staticmethod
+    def OTPInvalid():
+        return CustomException(type="auth/otp/invalid", status=400, title="Invalid OTP.", detail="The OTP you entered is incorrect. Please try again.")
