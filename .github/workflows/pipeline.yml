@@ -93,11 +93,11 @@ jobs:
           docker load < ~/eventorize-api.tar
 
           # Remove old containers ONLY for API
-          docker-compose -f docker-compose.prod.yml stop api
-          docker-compose -f docker-compose.prod.yml rm -f api
+          docker-compose -f docker-compose-product.yml stop api
+          docker-compose -f docker-compose-product.yml rm -f api
 
           # Start updated API container
-          docker-compose -f docker-compose.prod.yml up -d api
+          docker-compose -f docker-compose-product.yml up -d api
 
           # Clean up old unused images
           docker image prune -f
