@@ -95,73 +95,61 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
         run: |
+          # Copy Docker image and necessary files to VPS
+          scp eventorize-api.tar $VPS_USERNAME@$VPS_HOST:~/
+          scp docker-compose-product.yml $VPS_USERNAME@$VPS_HOST:/root/Eventorize_API_Huflit/
+
+          # Create and copy environment file
+          echo "${{ secrets.PROD_ENV }}" > prod.env
+          scp prod.env $VPS_USERNAME@$VPS_HOST:/root/Eventorize_API_Huflit/.env/prod.env
+
+          # Deploy on VPS
           ssh $VPS_USERNAME@$VPS_HOST << 'EOF'
             set -e # Exit on any error
-
-            echo "Starting deployment process..."
             
-            # Create deployment log
-            exec 1> >(tee -a "/root/deployment.log") 2>&1
-            echo "Deployment started at $(date)"
-
-            # Verify project directory
-            if [ ! -d "/root/Eventorize_API_Huflit" ]; then
-              echo "Creating project directory..."
-              mkdir -p /root/Eventorize_API_Huflit
-            fi
-
+            echo "Starting deployment process..."
             cd /root/Eventorize_API_Huflit
             echo "Current directory: $(pwd)"
 
-            # Verify docker-compose file
-            if [ ! -f "docker-compose-product.yml" ]; then
-              echo "ERROR: docker-compose-product.yml not found!"
-              echo "Directory contents:"
-              ls -la
+            # Create .env directory if it doesn't exist
+            mkdir -p .env
+
+            # Verify environment file
+            if [ ! -f ".env/prod.env" ]; then
+              echo "ERROR: prod.env not found!"
               exit 1
             fi
 
+            # Load new Docker image
             echo "Loading Docker image..."
             docker load < ~/eventorize-api.tar
 
+            # Stop and remove old container
             echo "Checking for existing containers..."
-            if docker-compose -f docker-compose-product.yml ps | grep -q api; then
+            if docker-compose -f docker-compose-product.yml ps | grep api; then
               echo "Stopping existing containers..."
               docker-compose -f docker-compose-product.yml stop api
               docker-compose -f docker-compose-product.yml rm -f api
             fi
 
+            # Start updated API container
             echo "Starting new containers..."
             docker-compose -f docker-compose-product.yml up -d api
 
-            # Verify container is running
-            echo "Verifying deployment..."
-            sleep 10  # Wait for container to fully start
-            if docker ps | grep -q eventorize-api; then
-              echo "Container is running"
-              
-              # Check if service is responding (adjust port as needed)
-              if curl -s -f http://localhost:3000/health 2>&1 > /dev/null; then
-                echo "Service is responding"
-              else
-                echo "WARNING: Service is not responding on health check"
-              fi
-            else
-              echo "ERROR: Container is not running"
-              docker ps
-              docker-compose -f docker-compose-product.yml logs api
-              exit 1
-            fi
-
+            # Clean up
             echo "Cleaning up..."
             docker image prune -f
             rm ~/eventorize-api.tar
 
-            echo "Deployment completed at $(date)"
-            
-            # Print container logs
-            echo "Recent container logs:"
-            docker-compose -f docker-compose-product.yml logs --tail=100 api
+            # Verify deployment
+            echo "Verifying deployment..."
+            if docker ps | grep eventorize-api; then
+              echo "Deployment successful!"
+            else
+              echo "Deployment failed!"
+              docker-compose -f docker-compose-product.yml logs api
+              exit 1
+            fi
           EOF
 
       - name: Verify Deployment
