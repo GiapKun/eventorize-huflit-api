@@ -98,14 +98,14 @@ jobs:
           # Debug: Print current directory
           pwd
           echo "Changing to project directory..."
-          
+
           # Make sure we're in the correct directory
           cd /root/Eventorize_API_Huflit
-          
+
           # Debug: Verify we're in the right place
           pwd
           ls -la docker-compose-product.yml
-          
+
           # Load new Docker image
           docker load < ~/eventorize-api.tar
 
@@ -129,4 +129,4 @@ jobs:
             echo "Deployment failed!"
             exit 1
           fi
-EOF
+          EOF
