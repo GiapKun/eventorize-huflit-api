@@ -1,5 +1,5 @@
 import re
-
+from datetime import datetime
 from bson import ObjectId
 
 from .value import DataFormat
@@ -50,3 +50,17 @@ def check_phone(phone):
     if re.match(pattern, phone):
         return True
     return False
+
+def is_expired(expiry_time: datetime) -> bool:
+    """
+    Check if an OTP has expired by comparing with current time.
+
+    Args:
+        expiry_time (Optional[datetime]): The expiry timestamp of the OTP.
+            If None, considers the OTP as expired.
+
+    Returns:
+        bool: True if OTP has expired or expiry_time is None, False otherwise.
+    """
+    current_time = datetime.now()
+    return current_time > expiry_time

@@ -24,7 +24,15 @@ class Users(BaseModel):
     instagram: Optional[UrlStr] = None
     # Password is optional because it is none when the user is created by SSO (Single Sign-On)
     password: Optional[bytes] = None
-    sso_id: Optional[str] = None
+    google_id: Optional[str] = None
+    github_id: Optional[str] = None
+    is_verified: bool = False
+    reset_password_otp: Optional[str] = None
+    reset_password_otp_expire: Optional[datetime] = None
+    reset_password_attempts: Optional[int] = None
+    verify_email_otp: Optional[str] = None
+    verify_email_otp_expire: Optional[datetime] = None
+    verify_email_otp_attempts: Optional[int] = None
     type: Literal["admin", "user"]
     created_at: datetime
     created_by: Optional[ObjectIdStr] = None

@@ -2,7 +2,7 @@ import hashlib
 import hmac
 import time
 
-from utils import arequests
+from utils import http_client
 
 from .config import settings
 
@@ -42,7 +42,7 @@ class PayOSApi:
             "expiredAt": int(time.time()) + 600,
             "signature": signature,
         }
-        response = await arequests.post(url=self.url, json=payload, headers=self.headers)
+        response = await http_client.post(url=self.url, json=payload, headers=self.headers)
         response = response.json()
         result = {}
         if response.get("code") != "00" or not response.get("data"):
@@ -56,7 +56,7 @@ class PayOSApi:
 
     async def get_payment_information(self, order_code: int):
         url = f"{self.url}/{order_code}"
-        response = await arequests.get(url=url, headers=self.headers)
+        response = await http_client.get(url=url, headers=self.headers)
         response = response.json()
         result = {}
         if response.get("code") != "00" or not response.get("data"):
@@ -73,7 +73,7 @@ class PayOSApi:
 
     async def cancel_payment(self, order_code: int):
         url = f"{self.url}/{order_code}/cancel"
-        response = await arequests.post(url=url, headers=self.headers)
+        response = await http_client.post(url=url, headers=self.headers)
         response = response.json()
         result = {}
         if response.get("code") != "00" or not response.get("data"):
@@ -87,7 +87,7 @@ class PayOSApi:
 
     async def get_checkout_url(self, order_code: int):
         url = f"{self.url}/{order_code}"
-        response = await arequests.get(url=url, headers=self.headers)
+        response = await http_client.get(url=url, headers=self.headers)
         response = response.json()
         result = {}
         if response.get("code") != "00" or not response.get("data"):
