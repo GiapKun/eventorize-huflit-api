@@ -9,32 +9,30 @@ jobs:
     runs-on: ubuntu-latest
     environment: test
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: "Checkout"
+        uses: "actions/checkout@v4"
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-
-      - name: Create .env file
+      - name: Creating .env file
         run: |
-          echo "ENVIRONMENT=${{ secrets.ENVIRONMENT }}" > .env
-          echo "APP_DATABASE_NAME=${{ secrets.APP_DATABASE_NAME }}" >> .env
-          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
-          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
-          echo "ALGORITHM=${{ secrets.ALGORITHM }}" >> .env
-          echo "DEFAULT_ADMIN_EMAIL=${{ secrets.DEFAULT_ADMIN_EMAIL }}" >> .env
-          echo "DEFAULT_ADMIN_PASSWORD=${{ secrets.DEFAULT_ADMIN_PASSWORD }}" >> .env
-          chmod 600 .env  # Secure the .env file
+          mkdir -p .env
+          echo "ENVIRONMENT=$ENVIRONMENT" > .env/test.env
+          echo "APP_DATABASE_NAME=$APP_DATABASE_NAME" >> .env/test.env
+          echo "DATABASE_URL=$DATABASE_URL" >> .env/test.env
+          echo "SECRET_KEY=$SECRET_KEY" >> .env/test.env
+          echo "ALGORITHM=$ALGORITHM" >> .env/test.env
+          echo "DEFAULT_ADMIN_EMAIL=$DEFAULT_ADMIN_EMAIL" >> .env/test.env
+          echo "DEFAULT_ADMIN_PASSWORD=$DEFAULT_ADMIN_PASSWORD" >> .env/test.env
+        shell: bash
+        env:
+          ENVIRONMENT: ${{ secrets.ENVIRONMENT }}
+          APP_DATABASE_NAME: ${{ secrets.APP_DATABASE_NAME }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          ALGORITHM: ${{ secrets.ALGORITHM }}
+          DEFAULT_ADMIN_EMAIL: ${{ secrets.DEFAULT_ADMIN_EMAIL }}
+          DEFAULT_ADMIN_PASSWORD: ${{ secrets.DEFAULT_ADMIN_PASSWORD }}
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pytest
-          pip install -r requirements.txt
-
-      - name: Run tests
+      - name: "Run tests"
         run: chmod +x bin/linux/test.sh && ./bin/linux/test.sh
 
   build:
