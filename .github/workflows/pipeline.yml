@@ -71,22 +71,19 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
         run: |
-          # Debug print (optional, remove in production)
-          echo "Setting up SSH for host: $VPS_HOST"
-
-          # Create .ssh directory
+          # Create .ssh directory with correct permissions
           mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
 
-          # Write private key
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          # Write private key with proper formatting
+          echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-          # Add host to known_hosts (with error handling)
-          if [ -n "$VPS_HOST" ]; then
-            ssh-keyscan "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
-          else
-            echo "Error: VPS_HOST is empty" && exit 1
-          fi
+          # Add host to known_hosts
+          ssh-keyscan -t rsa,ecdsa,ed25519 "$VPS_HOST" >> ~/.ssh/known_hosts
+
+          # Debug SSH connection (optional)
+          ssh -o StrictHostKeyChecking=no -T $VPS_USERNAME@$VPS_HOST -vvv
 
       - name: Deploy to VPS
         env:
@@ -98,24 +95,38 @@ jobs:
 
           # Deploy on VPS (optimized)
           ssh $VPS_USERNAME@$VPS_HOST << 'EOF'
-          cd ~/Eventorize_API_Huflit
-
+          # Debug: Print current directory
+          pwd
+          echo "Changing to project directory..."
+          
+          # Make sure we're in the correct directory
+          cd /root/Eventorize_API_Huflit
+          
+          # Debug: Verify we're in the right place
+          pwd
+          ls -la docker-compose-product.yml
+          
           # Load new Docker image
           docker load < ~/eventorize-api.tar
 
-          # Remove old containers ONLY for API
-          docker-compose -f docker-compose-product.yml stop api
-          docker-compose -f docker-compose-product.yml rm -f api
+          # Stop and remove old container
+          if docker-compose -f docker-compose-product.yml ps | grep api; then
+            docker-compose -f docker-compose-product.yml stop api
+            docker-compose -f docker-compose-product.yml rm -f api
+          fi
 
           # Start updated API container
           docker-compose -f docker-compose-product.yml up -d api
 
-          # Clean up old unused images
+          # Clean up
           docker image prune -f
-
-          # Remove transferred tar file
           rm ~/eventorize-api.tar
 
-          # Check if API is running
-          docker ps | grep eventorize-api || (echo "Deployment failed!" && exit 1)
-          EOF
+          # Verify deployment
+          if docker ps | grep eventorize-api; then
+            echo "Deployment successful!"
+          else
+            echo "Deployment failed!"
+            exit 1
+          fi
+EOF
