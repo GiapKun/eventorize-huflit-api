@@ -59,7 +59,11 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     environment: production
+
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
@@ -71,62 +75,103 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
         run: |
-          # Create .ssh directory with correct permissions
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-
-          # Write private key with proper formatting
           echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-
-          # Add host to known_hosts
           ssh-keyscan -t rsa,ecdsa,ed25519 "$VPS_HOST" >> ~/.ssh/known_hosts
 
-          # Debug SSH connection (optional)
-          ssh -o StrictHostKeyChecking=no -T $VPS_USERNAME@$VPS_HOST -vvv
+      - name: Copy deployment files
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
+        run: |
+          # Copy both Docker image and compose file
+          scp eventorize-api.tar $VPS_USERNAME@$VPS_HOST:~/
+          scp docker-compose-product.yml $VPS_USERNAME@$VPS_HOST:/root/Eventorize_API_Huflit/
 
       - name: Deploy to VPS
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
         run: |
-          # Copy Docker image to VPS
-          scp eventorize-api.tar $VPS_USERNAME@$VPS_HOST:~/
-
-          # Deploy on VPS (optimized)
           ssh $VPS_USERNAME@$VPS_HOST << 'EOF'
-          # Debug: Print current directory
-          pwd
-          echo "Changing to project directory..."
+            set -e # Exit on any error
 
-          # Make sure we're in the correct directory
-          cd /root/Eventorize_API_Huflit
+            echo "Starting deployment process..."
+            
+            # Create deployment log
+            exec 1> >(tee -a "/root/deployment.log") 2>&1
+            echo "Deployment started at $(date)"
 
-          # Debug: Verify we're in the right place
-          pwd
-          ls -la docker-compose-product.yml
+            # Verify project directory
+            if [ ! -d "/root/Eventorize_API_Huflit" ]; then
+              echo "Creating project directory..."
+              mkdir -p /root/Eventorize_API_Huflit
+            fi
 
-          # Load new Docker image
-          docker load < ~/eventorize-api.tar
+            cd /root/Eventorize_API_Huflit
+            echo "Current directory: $(pwd)"
 
-          # Stop and remove old container
-          if docker-compose -f docker-compose-product.yml ps | grep api; then
-            docker-compose -f docker-compose-product.yml stop api
-            docker-compose -f docker-compose-product.yml rm -f api
-          fi
+            # Verify docker-compose file
+            if [ ! -f "docker-compose-product.yml" ]; then
+              echo "ERROR: docker-compose-product.yml not found!"
+              echo "Directory contents:"
+              ls -la
+              exit 1
+            fi
 
-          # Start updated API container
-          docker-compose -f docker-compose-product.yml up -d api
+            echo "Loading Docker image..."
+            docker load < ~/eventorize-api.tar
 
-          # Clean up
-          docker image prune -f
-          rm ~/eventorize-api.tar
+            echo "Checking for existing containers..."
+            if docker-compose -f docker-compose-product.yml ps | grep -q api; then
+              echo "Stopping existing containers..."
+              docker-compose -f docker-compose-product.yml stop api
+              docker-compose -f docker-compose-product.yml rm -f api
+            fi
 
-          # Verify deployment
-          if docker ps | grep eventorize-api; then
-            echo "Deployment successful!"
-          else
-            echo "Deployment failed!"
-            exit 1
-          fi
+            echo "Starting new containers..."
+            docker-compose -f docker-compose-product.yml up -d api
+
+            # Verify container is running
+            echo "Verifying deployment..."
+            sleep 10  # Wait for container to fully start
+            if docker ps | grep -q eventorize-api; then
+              echo "Container is running"
+              
+              # Check if service is responding (adjust port as needed)
+              if curl -s -f http://localhost:3000/health 2>&1 > /dev/null; then
+                echo "Service is responding"
+              else
+                echo "WARNING: Service is not responding on health check"
+              fi
+            else
+              echo "ERROR: Container is not running"
+              docker ps
+              docker-compose -f docker-compose-product.yml logs api
+              exit 1
+            fi
+
+            echo "Cleaning up..."
+            docker image prune -f
+            rm ~/eventorize-api.tar
+
+            echo "Deployment completed at $(date)"
+            
+            # Print container logs
+            echo "Recent container logs:"
+            docker-compose -f docker-compose-product.yml logs --tail=100 api
           EOF
+
+      - name: Verify Deployment
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
+        run: |
+          echo "Checking deployment status..."
+          ssh $VPS_USERNAME@$VPS_HOST "docker ps | grep eventorize-api" || {
+            echo "Deployment verification failed"
+            exit 1
+          }
+          echo "Deployment verified successfully"
