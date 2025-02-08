@@ -1,0 +1,110 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    environment: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Create .env file
+        run: |
+          echo "ENVIRONMENT=${{ secrets.ENVIRONMENT }}" > .env
+          echo "APP_DATABASE_NAME=${{ secrets.APP_DATABASE_NAME }}" >> .env
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
+          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
+          echo "ALGORITHM=${{ secrets.ALGORITHM }}" >> .env
+          echo "DEFAULT_ADMIN_EMAIL=${{ secrets.DEFAULT_ADMIN_EMAIL }}" >> .env
+          echo "DEFAULT_ADMIN_PASSWORD=${{ secrets.DEFAULT_ADMIN_PASSWORD }}" >> .env
+          chmod 600 .env  # Secure the .env file
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t eventorize-api:latest -f Dockerfile.prod .
+
+      - name: Save Docker image
+        run: docker save eventorize-api:latest > eventorize-api.tar
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: docker-image
+          path: eventorize-api.tar
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: docker-image
+
+      - name: Setup SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H $VPS_HOST >> ~/.ssh/known_hosts
+
+      - name: Deploy to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
+        run: |
+          # Copy Docker image to VPS
+          scp eventorize-api.tar $VPS_USERNAME@$VPS_HOST:~/
+
+          # Deploy on VPS (optimized)
+          ssh $VPS_USERNAME@$VPS_HOST << 'EOF'
+          cd ~/Eventorize_API_Huflit
+
+          # Load new Docker image
+          docker load < ~/eventorize-api.tar
+
+          # Remove old containers ONLY for API
+          docker-compose -f docker-compose.prod.yml stop api
+          docker-compose -f docker-compose.prod.yml rm -f api
+
+          # Start updated API container
+          docker-compose -f docker-compose.prod.yml up -d api
+
+          # Clean up old unused images
+          docker image prune -f
+
+          # Remove transferred tar file
+          rm ~/eventorize-api.tar
+
+          # Check if API is running
+          docker ps | grep eventorize-api || (echo "Deployment failed!" && exit 1)
+          EOF
