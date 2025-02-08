@@ -43,7 +43,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Docker image
-        run: docker build -t eventorize-api:latest -f app/Dockerfile.prod .
+        working-directory: app
+        run: docker build -t eventorize-api:latest -f Dockerfile.prod .
 
       - name: Save Docker image
         run: docker save eventorize-api:latest > eventorize-api.tar
