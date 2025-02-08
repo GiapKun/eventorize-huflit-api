@@ -7,7 +7,6 @@ services:
       - ./tests/:/opt/projects/app/tests
     env_file:
       - ./.env/dev.env
-      - ./.env/test.env
     healthcheck:
       test:
         [
