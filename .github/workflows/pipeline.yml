@@ -71,10 +71,22 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
         run: |
+          # Debug print (optional, remove in production)
+          echo "Setting up SSH for host: $VPS_HOST"
+
+          # Create .ssh directory
           mkdir -p ~/.ssh
+
+          # Write private key
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H $VPS_HOST >> ~/.ssh/known_hosts
+
+          # Add host to known_hosts (with error handling)
+          if [ -n "$VPS_HOST" ]; then
+            ssh-keyscan "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          else
+            echo "Error: VPS_HOST is empty" && exit 1
+          fi
 
       - name: Deploy to VPS
         env:
