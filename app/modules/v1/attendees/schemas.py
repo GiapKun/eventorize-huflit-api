@@ -1,9 +1,8 @@
 from datetime import datetime
-from typing import List, Literal, Optional
+from typing import List, Optional
 
-from core.schemas import ObjectIdStr, EmailStr, PhoneStr, DateTimeStr
-from pydantic import BaseModel, Field, model_validator
-from typing_extensions import Self
+from core.schemas import ObjectIdStr, EmailStr, PhoneStr
+from pydantic import BaseModel, Field
 
 
 class CreateRequest(BaseModel):
@@ -15,7 +14,7 @@ class CreateRequest(BaseModel):
 
 
 class Response(BaseModel):
-    _id: str = Field(alias="_id")
+    id: str = Field(alias="_id")
     user_id: str
     event_id: str
     ticket_id: str

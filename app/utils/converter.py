@@ -1,4 +1,5 @@
 import time
+import re
 from datetime import datetime
 
 from slugify import slugify
@@ -72,3 +73,12 @@ def convert_date_string_to_timestamp(datetime_str: str, date_format=r"%Y-%m-%d")
         1725168000.0
     """
     return time.mktime(datetime.strptime(datetime_str, date_format).timetuple())
+
+def clean_email(email) -> str:
+    # Check if the email ends with "@gmail.com"
+    if email.endswith("@gmail.com"):
+        special_chars = r"[.+]"
+        local_part = email.split("@")[0]
+        return re.split(special_chars, local_part)[0]
+    else:
+        return email

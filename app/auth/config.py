@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
@@ -18,6 +19,11 @@ PUBLIC_APIS = [
     ["/v1/locations/wards", "GET"],
     {"/v1/event/{event_id}/tickets/{_id}", "GET"},
     "/v1/home/event/{event_id}/tickets",
+    "/v1/auth/google/login",
+    "/v1/auth/google/callback",
+    "/v1/auth/verify-email",
+    "/v1/auth/forgot-password",
+    "/v1/auth/reset-password",
 ]
 
 
@@ -25,6 +31,7 @@ class Settings(BaseSettings):
     access_token_expire_day: int = Field(default=3)
     secret_key: str
     algorithm: str
+    frontend_url: Optional[str] = None
 
 
 settings = Settings()

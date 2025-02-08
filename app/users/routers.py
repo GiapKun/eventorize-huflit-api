@@ -32,7 +32,7 @@ class RoutersCBV:
         result = await user_controllers.register(data=data)
         return schemas.LoginResponse(**result)
 
-    @router.post("/users/login", status_code=201, responses={201: {"model": schemas.LoginResponse, "description": "Register user success"}})
+    @router.post("/users/login", status_code=201, responses={201: {"model": schemas.LoginResponse, "description": "Login user success"}})
     async def login(self, data: schemas.LoginRequest):
         result = await user_controllers.login(data=data)
         return schemas.LoginResponse(**result)

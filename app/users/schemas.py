@@ -31,6 +31,7 @@ class Response(BaseModel):
     id: str = Field(alias="_id")
     fullname: str
     email: str
+    is_verified: bool
     position: Optional[str] = None
     phone: Optional[str] = None
     avatar: Optional[UrlStr] = None
@@ -82,6 +83,12 @@ class EditRequest(BaseModel):
 
 
 class GoogleSSORequest(BaseModel):
+    id: str
+    display_name: str
+    email: EmailStr
+    picture: UrlStr
+
+class GithubSSORequest(BaseModel):
     id: str
     display_name: str
     email: EmailStr

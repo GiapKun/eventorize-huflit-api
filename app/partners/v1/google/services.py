@@ -1,10 +1,9 @@
-from core.services import BaseServices
 from fastapi_sso.sso.google import GoogleSSO
 
 from .config import settings
 
 
-class GoogleSSOService(BaseServices):
+class GoogleSSOService:
     def __init__(self, client_id, client_secret, redirect_uri) -> None:
         self.client_id = client_id
         self.client_secret = client_secret

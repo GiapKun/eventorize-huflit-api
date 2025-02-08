@@ -1,13 +1,14 @@
+from typing import Optional
+
+from pydantic import Field
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    resend_api_key: str
-    resend_domain: str
-    resend_sender_name: str
-    resend_sender: str
-
-    max_size_file: int = 5 * 1024 * 1024
-
+    resend_api_key: Optional[str] = None
+    host_email: str = Field(default="noreply@giapkun.site")
+    sender_name: str = Field(default="Eventorize")
+    verification_link: str = Field(default="https://eventorize.giapkun.site/verify-email")
+    reset_password_link: str = Field(default="https://eventorize.giapkun.site/reset-password")
 
 settings = Settings()

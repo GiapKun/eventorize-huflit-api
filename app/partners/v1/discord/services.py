@@ -1,17 +1,18 @@
+from typing import List
 from discord_webhook import AsyncDiscordWebhook
-
+from config import settings as root_settings
 from .config import settings
 
 
 class BaseBot:
-    def __init__(self, webhook_url, environment) -> None:
+    def __init__(self, webhook_url: str, environment: str) -> None:
         self.webhook_url = webhook_url
         self.environment = environment
+        self.bot = AsyncDiscordWebhook(url=self.webhook_url)
 
-    async def send_message(self, message):
-        if self.environment not in ["production", "staging"]:
+    async def send_message(self, message: str):
+        if root_settings.is_production() is False:
             return
-        """Send a message to the specified Discord webhook."""
         bot = AsyncDiscordWebhook(url=self.webhook_url)
         bot.set_content(content=message)
 
@@ -69,6 +70,29 @@ class ErrorBot(BaseBot):
             f"**Request Id**: {request_id}\n"
         )
         await self.send_message(message)
+
+    async def send_notify_email_failure(self, error_message: str, recipients: List[str]) -> None:
+        """
+        Send a notification about an email failure.
+
+        Args:
+            error_message (str): The error message describing the email failure.
+            recipients (List[str]): List of email addresses the email was trying to send to.
+
+        Returns:
+            None
+        """
+        message = f"<b>❌ Email Send Failure Notification</b>\n\n" f"<b>Error Message</b>: {error_message}\n" f"<b>Recipients</b>: {', '.join(recipients)}\n"
+        await self.send_message(message)
+
+    async def alter_warning(self, warning_message: str) -> None:
+        formatted_message = (
+            "<b>⚠️ Warning</b>\n\n"
+            "<i>An issue occurred while processing the request:</i>\n\n"
+            f"<b>Detail</b>: {warning_message}\n\n"
+            "Please check the logs or retry the request if necessary."
+        )
+        await self.send_message(formatted_message)
 
 
 error_bot = ErrorBot(webhook_url=settings.error_webhook_url, environment=settings.environment)
