@@ -88,7 +88,7 @@ jobs:
         run: |
           # Copy both Docker image and compose file
           scp eventorize-api.tar $VPS_USERNAME@$VPS_HOST:~/
-          scp docker-compose-product.yml $VPS_USERNAME@$VPS_HOST:/root/eventorize-api-huflit/
+          scp docker-compose-product.yml $VPS_USERNAME@$VPS_HOST:/root/eventorize-huflit-api/
 
       - name: Deploy to VPS
         env:
@@ -100,17 +100,17 @@ jobs:
           echo "${{ secrets.DB_ENV }}" > db.env
 
           # Create necessary directories on VPS
-          ssh $VPS_USERNAME@$VPS_HOST "mkdir -p /root/eventorize-api-huflit/.env"
+          ssh $VPS_USERNAME@$VPS_HOST "mkdir -p /root/eventorize-huflit-api/.env"
 
           # Copy files to VPS
-          scp prod.env $VPS_USERNAME@$VPS_HOST:/root/eventorize-api-huflit/.env/prod.env
-          scp db.env $VPS_USERNAME@$VPS_HOST:/root/eventorize-api-huflit/.env/db.env
+          scp prod.env $VPS_USERNAME@$VPS_HOST:/root/eventorize-huflit-api/.env/prod.env
+          scp db.env $VPS_USERNAME@$VPS_HOST:/root/eventorize-huflit-api/.env/db.env
           scp eventorize-api.tar $VPS_USERNAME@$VPS_HOST:~/
-          scp docker-compose-product.yml $VPS_USERNAME@$VPS_HOST:/root/eventorize-api-huflit/
+          scp docker-compose-product.yml $VPS_USERNAME@$VPS_HOST:/root/eventorize-huflit-api/
 
           # Deploy on VPS
           ssh $VPS_USERNAME@$VPS_HOST << 'EOF'
-            cd /root/eventorize-api-huflit
+            cd /root/eventorize-huflit-api
             
             # Verify env files exist
             if [ ! -f ".env/prod.env" ] || [ ! -f ".env/db.env" ]; then
