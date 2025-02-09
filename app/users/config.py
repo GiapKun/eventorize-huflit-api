@@ -1,10 +1,11 @@
+from typing import Optional
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    default_admin_email: str
-    default_admin_password: str
+    default_admin_email: Optional[str] = None
+    default_admin_password: Optional[str] = None
     minimum_length_of_the_password: int = Field(default=8)
     maximum_avatar_file_size: int = Field(default=5 * 1024 * 1024)  # default 5MB
     otp_length: int = Field(default=6)
