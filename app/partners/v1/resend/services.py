@@ -5,7 +5,7 @@ from config import settings as root_settings
 from core.schemas import EmailStr
 from jinja2 import Template
 from loguru import logger
-from partners.v1.discord.services import error_bot
+from partners.v1.telegram.services import error_bot
 from utils import http_client
 
 from .config import settings
