@@ -8,7 +8,7 @@ from db.base import BaseCRUD
 from db.engine import engine_logs
 from fastapi import Request
 from loguru import logger
-from partners.v1.discord.services import error_bot
+from partners.v1.telegram.services import error_bot
 from starlette.background import BackgroundTask
 from starlette.concurrency import iterate_in_threadpool
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -122,7 +122,4 @@ class LogsMiddleware(BaseHTTPMiddleware):
 
         if response.status_code == 500:
             await error_bot.send_error(exc_list, request, response, log.request_id, issue_link)
-        else:
-            if response.status_code in [400, 401, 403, 404, 502, 504]:
-                await error_bot.send_warning(request, response, log.response_body, log.request_id)
         return response
