@@ -1,5 +1,5 @@
-from core.schemas import CommonsDependencies, ObjectIdStr, PaginationParams
-from fastapi import Depends
+from core.schemas import CommonsDependencies, ObjectIdStr, PaginationParams, UrlStr
+from fastapi import Depends, File, UploadFile
 from fastapi_restful.cbv import cbv
 from fastapi_restful.inferring_router import InferringRouter
 
@@ -49,13 +49,18 @@ class RoutersCBV:
         return schemas.Response(**results)
 
     @router.post("/organizers", status_code=201, responses={201: {"model": schemas.Response, "description": "Create organizer success"}})
-    async def create(self, data: schemas.CreateRequest):
-        result = await organizer_controllers.create(data=data, commons=self.commons)
+    async def create(self, data: schemas.CreateRequest = Depends(schemas.CreateRequest.as_form), file: UploadFile = File(None)):
+        result = await organizer_controllers.create(data=data, file=file, commons=self.commons)
         return schemas.Response(**result)
 
     @router.put("/organizers/{_id}", status_code=200, responses={200: {"model": schemas.Response, "description": "Update organizer success"}})
     async def edit(self, _id: ObjectIdStr, data: schemas.EditRequest):
         results = await organizer_controllers.edit(_id=_id, data=data, commons=self.commons)
+        return schemas.Response(**results)
+
+    @router.put("/organizers/{_id}/logo", status_code=200, responses={200: {"model": schemas.Response, "description": "Update organizer's logo success"}})
+    async def edit_thumbnail(self, _id: ObjectIdStr, file: UploadFile = None, image_url: UrlStr = None):
+        results = await organizer_controllers.edit_logo(_id=_id, file=file, image_url=image_url, commons=self.commons)
         return schemas.Response(**results)
 
     @router.delete("/organizers/{_id}", status_code=204)

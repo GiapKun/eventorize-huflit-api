@@ -1,5 +1,5 @@
-from core.schemas import CommonsDependencies, ObjectIdStr, PaginationParams
-from fastapi import Depends
+from core.schemas import CommonsDependencies, ObjectIdStr, PaginationParams, UrlStr
+from fastapi import Depends, File, UploadFile
 from fastapi_restful.cbv import cbv
 from fastapi_restful.inferring_router import InferringRouter
 
@@ -15,7 +15,7 @@ router = InferringRouter(
 @cbv(router)
 class RoutersCBV:
     commons: CommonsDependencies = Depends(CommonsDependencies)  # type: ignore
-        
+
     @router.get("/events", status_code=200, responses={200: {"model": schemas.PublicListResponse, "description": "Get events success"}})
     async def get_all(self, pagination: PaginationParams = Depends()):
         search_in = ["title"]
@@ -42,13 +42,18 @@ class RoutersCBV:
         return schemas.PublicResponse(**results)
 
     @router.post("/events", status_code=201, responses={201: {"model": schemas.Response, "description": "Create event success"}})
-    async def create(self, data: schemas.CreateRequest):
-        result = await event_controllers.create(data=data, commons=self.commons)
+    async def create(self, data: schemas.CreateRequest = Depends(schemas.CreateRequest.as_form), file: UploadFile = File(None)):
+        result = await event_controllers.create(data=data, file=file, commons=self.commons)
         return schemas.Response(**result)
 
     @router.put("/events/{_id}", status_code=200, responses={200: {"model": schemas.Response, "description": "Update event success"}})
     async def edit(self, _id: ObjectIdStr, data: schemas.EditRequest):
         results = await event_controllers.edit(_id=_id, data=data, commons=self.commons)
+        return schemas.Response(**results)
+
+    @router.put("/events/{_id}/thumbnail", status_code=200, responses={200: {"model": schemas.Response, "description": "Update event's thumbnail success"}})
+    async def edit_thumbnail(self, _id: ObjectIdStr, file: UploadFile = File(None), image_url: UrlStr = None):
+        results = await event_controllers.edit_thumbnail(_id=_id, file=file, image_url=image_url, commons=self.commons)
         return schemas.Response(**results)
 
     @router.delete("/events/{_id}", status_code=204)
