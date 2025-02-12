@@ -2,13 +2,14 @@ from datetime import datetime
 from typing import List, Optional
 
 from core.schemas import EmailStr, PhoneStr, UrlStr
+from fastapi import Form
 from pydantic import BaseModel, Field
 
 
 class CreateRequest(BaseModel):
     name: str
-    email: EmailStr
     logo: Optional[UrlStr] = None
+    email: EmailStr
     phone: Optional[PhoneStr] = None
     description: Optional[str] = None
     # Location
@@ -21,6 +22,39 @@ class CreateRequest(BaseModel):
     twitter: Optional[UrlStr] = None
     linkedin: Optional[UrlStr] = None
     instagram: Optional[UrlStr] = None
+
+    @classmethod
+    def as_form(
+        cls,
+        name: str = Form(...),
+        logo: str = Form(None),
+        email: EmailStr = Form(...),
+        phone: str = Form(None),
+        description: str = Form(None),
+        country: str = Form(None),
+        city: str = Form(None),
+        district: str = Form(None),
+        ward: str = Form(None),
+        facebook: str = Form(None),
+        twitter: str = Form(None),
+        linkedin: str = Form(None),
+        instagram: str = Form(None),
+    ) -> "CreateRequest":
+        return cls(
+            name=name,
+            logo=logo,
+            email=email,
+            phone=phone,
+            description=description,
+            country=country,
+            city=city,
+            district=district,
+            ward=ward,
+            facebook=facebook,
+            twitter=twitter,
+            linkedin=linkedin,
+            instagram=instagram,
+        )
 
 
 class Response(BaseModel):

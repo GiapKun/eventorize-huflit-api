@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from core.schemas import DateTimeStr, ObjectIdStr, UrlStr
+from fastapi import Form
 from pydantic import BaseModel, Field
 
 
@@ -9,7 +10,7 @@ class CreateRequest(BaseModel):
     organizer_id: ObjectIdStr
     title: str
     thumbnail: Optional[UrlStr] = None
-    description: str
+    description: Optional[str] = None
     link: Optional[UrlStr] = None
     start_date: DateTimeStr
     end_date: DateTimeStr
@@ -19,6 +20,39 @@ class CreateRequest(BaseModel):
     ward: Optional[str] = None
     city: Optional[str] = None
     country: Optional[str] = None
+
+    @classmethod
+    def as_form(
+        cls,
+        organizer_id: str = Form(...),
+        title: str = Form(...),
+        thumbnail: str = Form(None),
+        description: str = Form(None),
+        link: str = Form(None),
+        start_date: str = Form(...),
+        end_date: str = Form(...),
+        is_online: bool = Form(...),
+        address: str = Form(None),
+        district: str = Form(None),
+        ward: str = Form(None),
+        city: str = Form(None),
+        country: str = Form(None),
+    ) -> "CreateRequest":
+        return cls(
+            organizer_id=organizer_id,
+            title=title,
+            thumbnail=thumbnail,
+            description=description,
+            link=link,
+            start_date=start_date,
+            end_date=end_date,
+            is_online=is_online,
+            address=address,
+            district=district,
+            ward=ward,
+            city=city,
+            country=country,
+        )
 
 
 class PublicResponse(BaseModel):
