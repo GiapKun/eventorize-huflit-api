@@ -46,7 +46,13 @@ class TicketControllers(BaseControllers):
     async def get_event_tickets(
         self, query=None, search=None, search_in=None, page=1, limit=20, fields_limit=None, sort_by="created_at", order_by="desc", include_deleted=False, event_id: str = None, commons=None
     ):
-        query = {"event_id": event_id, "status": "active"}
+        query = {"event_id": event_id, "status": {"$in": ["active", "sold out"]}}
+        return await super().get_all(query, search, search_in, page, limit, fields_limit, sort_by, order_by, include_deleted, commons)
+
+    async def get_all_tickets_by_event(
+        self, query=None, search=None, search_in=None, page=1, limit=20, fields_limit=None, sort_by="created_at", order_by="desc", include_deleted=False, event_id: str = None, commons=None
+    ):
+        query = {"event_id": event_id}
         return await super().get_all(query, search, search_in, page, limit, fields_limit, sort_by, order_by, include_deleted, commons)
 
 

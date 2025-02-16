@@ -54,6 +54,25 @@ class RoutersCBV:
             return results
         return schemas.ListResponse(**results)
 
+    @router.get("/event/{event_id}/tickets", status_code=200, responses={200: {"model": schemas.ListResponse, "description": "Get tickets success"}})
+    async def get_all_tickets_by_event(self, event_id: ObjectIdStr, pagination: PaginationParams = Depends()):
+        search_in = ["title"]
+        results = await ticket_controllers.get_all_tickets_by_event(
+            query=pagination.query,
+            search=pagination.search,
+            search_in=search_in,
+            page=pagination.page,
+            limit=pagination.limit,
+            fields_limit=pagination.fields,
+            sort_by=pagination.sort_by,
+            order_by=pagination.order_by,
+            event_id=event_id,
+            commons=self.commons,
+        )
+        if pagination.fields:
+            return results
+        return schemas.ListResponse(**results)
+
     @router.get("/event/{event_id}/tickets/{ticket_id}", status_code=200, responses={200: {"model": schemas.Response, "description": "Get ticket success"}})
     async def get_detail(self, event_id: ObjectIdStr, ticket_id: ObjectIdStr, fields: str = None):
         results = await ticket_controllers.get_detail(ticket_id=ticket_id, event_id=event_id, fields=fields, commons=self.commons)
