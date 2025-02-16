@@ -19,3 +19,12 @@ class ErrorCode:
         response["title"] = "Something went wrong."
         response["detail"] = "Something went wrong. Please read the documentation or contact support for assistance."
         return JSONResponse(status_code=500, content=response)
+
+    @staticmethod
+    def EmailNotVerified():
+        response = {}
+        response["type"] = "core/warning/email-not-verified"
+        response["status"] = 403
+        response["title"] = "Email Not Verified."
+        response["detail"] = "You must verify your email to use this service."
+        return JSONResponse(status_code=403, content=response)
