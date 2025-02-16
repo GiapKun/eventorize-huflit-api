@@ -16,10 +16,10 @@ class UserControllers(BaseControllers):
         super().__init__(controller_name, service)
 
     async def check_exist_email(self, email: str):
-            normalized_email = converter.clean_email(email=email)
-            result = await self.get_all(query={"email": {"$regex": normalized_email, "$options": "i"}})
-            if result["total_items"] > 0:
-                raise UsersErrorCode.Conflict(service_name="users", item=email)
+        normalized_email = converter.clean_email(email=email)
+        result = await self.get_all(query={"email": {"$regex": normalized_email, "$options": "i"}})
+        if result["total_items"] > 0:
+            raise UsersErrorCode.Conflict(service_name="users", item=email)
 
     async def login(self, data: schemas.LoginRequest) -> dict:
         # Convert the Pydantic model 'data' to a dictionary
@@ -91,9 +91,9 @@ class UserControllers(BaseControllers):
         if user is None:
             new_user = await self.register_with_google(fullname=data["display_name"], email=data["email"], google_id=data["id"], avatar=data["picture"])
             return new_user
-        user = await self.service.login_with_google(data=data)
+        user = await self.service.login_with_google(email=data["email"], google_id=data["id"])
         return user
-    
+
     async def send_verification_email(self, commons: CommonsDependencies) -> None:
         current_user_id = self.get_current_user(commons=commons)
         # Fetch user and check token in the database
@@ -132,7 +132,6 @@ class UserControllers(BaseControllers):
         # Reset password
         await self.service.update_password(user_id=user["_id"], password=password)
 
-
     async def verify_email(self, email: str, otp: str) -> dict:
         # Fetch user by email
         user = await self.get_by_email(email=email)
@@ -150,5 +149,6 @@ class UserControllers(BaseControllers):
             await self.service.increment_verify_email_attempts(user_id=user["_id"])
             raise UsersErrorCode.OTPInvalid()
         return await self.service.verify_email(user_id=user["_id"])
+
 
 user_controllers = UserControllers(controller_name="users", service=user_services)
