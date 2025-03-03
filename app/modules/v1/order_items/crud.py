@@ -68,16 +68,13 @@ class OrderItemsCRUD(BaseCRUD):
             {"$addFields": {"ConvertObjectId": {"$toObjectId": "$ticket_id"}}},
             {"$lookup": {"from": "tickets", "localField": "ConvertObjectId", "foreignField": "_id", "as": "ticketInfo"}},
             {"$unwind": {"path": "$ticketInfo", "preserveNullAndEmptyArrays": True}},  # Giữ giá trị null nếu không tìm thấy document tương ứng
-            {
-                "$replaceRoot": {
-                    "newRoot": {
-                        "$mergeObjects": [
-                            "$$ROOT",
-                            {"ticket_title": "$ticketInfo.title"},
-                        ]
-                    }
-                }
-            },
+            # Convert event_id to ObjectId for the next lookup
+            {"$addFields": {"convertedEventId": {"$toObjectId": "$ticketInfo.event_id"}}},
+            # Lookup to events collection
+            {"$lookup": {"from": "events", "localField": "convertedEventId", "foreignField": "_id", "as": "eventInfo"}},
+            # Unwind the eventInfo array
+            {"$unwind": {"path": "$eventInfo", "preserveNullAndEmptyArrays": True}},
+            {"$replaceRoot": {"newRoot": {"$mergeObjects": ["$$ROOT", {"ticket_title": "$ticketInfo.title", "event_id": "$ticketInfo.event_id", "event_title": "$eventInfo.title"}]}}},
         ]
 
         # Chèn `search_query` vào pipeline sau khi `lookup` hoàn tất
@@ -94,7 +91,7 @@ class OrderItemsCRUD(BaseCRUD):
                             {"$sort": sorting},
                             {"$skip": (page - 1) * limit},
                             {"$limit": limit},
-                            {"$project": {"ticketInfo": 0, "convertedUserId": 0, **fields_limit}},
+                            {"$project": {"ticketInfo": 0, "eventInfo": 0, "convertedUserId": 0, "ConvertObjectId": 0, "convertedEventId": 0, **fields_limit}},
                         ],
                     }
                 },
