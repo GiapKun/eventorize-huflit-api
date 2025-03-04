@@ -1,4 +1,5 @@
 from typing import Any, Dict
+
 from auth.services import authentication_services
 from core.schemas import CommonsDependencies
 from core.services import BaseServices
@@ -19,7 +20,7 @@ class UserServices(BaseServices):
     async def get_by_email(self, email: str, ignore_error: bool = False) -> dict | None:
         results = await self.get_by_field(data=email, field_name="email", ignore_error=ignore_error)
         return results if results else None
-    
+
     async def delete_fields(self, _id: str, field_names: list[str]) -> None:
         await self.crud.delete_field_by_id(_id=_id, field_name=field_names)
 
@@ -70,6 +71,9 @@ class UserServices(BaseServices):
         if not item:
             raise UserErrorCode.Unauthorize()
         # Validate the provided password against the hashed value.
+        if not item.get("password"):
+            raise UserErrorCode.Unauthorize()
+        # Validate the provided password against the hashed value.
         is_valid_password = await authentication_services.validate_hash(value=data["password"], hashed_value=item["password"])
         if not is_valid_password:
             raise UserErrorCode.Unauthorize()
@@ -106,7 +110,7 @@ class UserServices(BaseServices):
         item["access_token"] = await authentication_services.create_access_token(user_id=item["_id"], user_type=item["type"])
         item["token_type"] = "bearer"
         return item
-    
+
     async def login_with_google(self, email: str, google_id: str) -> dict:
         # check if the user already exists
         user = await self.get_by_email(email=email)
@@ -154,20 +158,21 @@ class UserServices(BaseServices):
         data_update = {}
         data_update["verify_email_otp_attempts"] = current_attempts + 1
         return await self.update_by_id(_id=user_id, data=data_update)
-    
+
     async def update_password(self, user_id: str, password: str) -> dict:
         reset_fields = ["reset_password_otp", "reset_password_otp_expire", "reset_password_attempts"]
         data = {}
         data["password"] = await authentication_services.hash(value=password)
         await self.delete_fields(_id=user_id, field_names=reset_fields)
         return await self.edit(_id=user_id, data=data, check_modified=False, commons=None)
-    
+
     async def verify_email(self, user_id: str) -> dict:
         reset_fields = ["verify_email_otp", "verify_email_otp_expire", "verify_email_otp_attempts"]
         data_update = {}
         data_update["is_verified"] = True
         await self.delete_fields(_id=user_id, field_names=reset_fields)
         return await self.edit(_id=user_id, data=data_update)
+
 
 user_crud = BaseCRUD(database_engine=app_engine, collection="users")
 user_services = UserServices(service_name="users", crud=user_crud)
