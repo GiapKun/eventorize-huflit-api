@@ -173,6 +173,9 @@ class UserServices(BaseServices):
         await self.delete_fields(_id=user_id, field_names=reset_fields)
         return await self.edit(_id=user_id, data=data_update)
 
+    async def get_total_users(self, start_date, end_date) -> int:
+        return await self.get_all(query={"is_verified": True, "created_at": {"$gte": start_date, "$lte": end_date}})
+
 
 user_crud = BaseCRUD(database_engine=app_engine, collection="users")
 user_services = UserServices(service_name="users", crud=user_crud)
