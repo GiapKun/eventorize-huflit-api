@@ -55,6 +55,18 @@ class OrderServices(BaseServices):
         data["updated_at"] = self.get_current_datetime()
         return await self.update_by_id(_id=order_id, data=data)
 
+    async def get_top_buyer(self, start_date, end_date, limit: int = 3):
+        return await self.crud.get_top_buyer(start_date=start_date, end_date=end_date, limit=limit)
+
+    async def get_revenue(self, start_date, end_date):
+        return await self.crud.get_revenue(start_date=start_date, end_date=end_date)
+
+    async def get_total_orders(self, start_date, end_date):
+        return await self.crud.get_total_orders(start_date=start_date, end_date=end_date)
+
+    async def get_total_buyers(self, start_date, end_date):
+        return await self.crud.get_total_buyers(start_date=start_date, end_date=end_date)
+
 
 order_crud = OrdersCRUD(database_engine=app_engine, collection="orders")
 order_services = OrderServices(service_name="orders", crud=order_crud)

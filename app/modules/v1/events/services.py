@@ -1,12 +1,15 @@
 from core.schemas import CommonsDependencies
 from core.services import BaseServices
-from db.base import BaseCRUD
 from db.engine import app_engine
 
 from . import models, schemas
+from .crud import EventCRUD
 
 
 class EventServices(BaseServices):
+    def __init__(self, service_name: str, crud: EventCRUD = None) -> None:
+        super().__init__(service_name, crud)
+
     async def create(self, data: schemas.CreateRequest, commons: CommonsDependencies) -> dict:
         data["created_by"] = self.get_current_user(commons=commons)
         data["created_at"] = self.get_current_datetime()
@@ -18,6 +21,12 @@ class EventServices(BaseServices):
         data["updated_at"] = self.get_current_datetime()
         return await self.update_by_id(_id=_id, data=data)
 
+    async def get_total_event(self, start_date, end_date):
+        return await self.crud.get_total_event(start_date=start_date, end_date=end_date)
 
-event_crud = BaseCRUD(database_engine=app_engine, collection="events")
+    async def get_count_event(self, start_date, end_date):
+        return await self.crud.get_count_event(start_date=start_date, end_date=end_date)
+
+
+event_crud = EventCRUD(database_engine=app_engine, collection="events")
 event_services = EventServices(service_name="events", crud=event_crud)
