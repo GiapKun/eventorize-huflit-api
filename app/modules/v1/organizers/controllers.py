@@ -68,5 +68,9 @@ class OrganizerControllers(BaseControllers):
         data_update["logo"] = await r2_services.upload_file(filename=filename, file_content=file_content)
         return await self.service.edit(_id=_id, data=data_update, commons=commons)
 
+    async def export_organizers(self, commons: CommonsDependencies) -> dict:
+        data = await self.get_all(limit=self.max_record_limit, commons=commons)
+        return await self.service.export_organizers(data=data["results"])
+
 
 organizer_controllers = OrganizerControllers(controller_name="organizers", service=organizer_services)

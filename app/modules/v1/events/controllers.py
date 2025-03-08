@@ -81,5 +81,10 @@ class EventControllers(BaseControllers):
         data_update["thumbnail"] = await r2_services.upload_file(filename=filename, file_content=file_content)
         return await self.service.edit(_id=_id, data=data_update, commons=commons)
 
+    async def export_events(self, commons: CommonsDependencies = None) -> dict:
+        data = await self.get_all(limit=self.max_record_limit, commons=commons)
+        print(data)
+        return await self.service.export_events(data=data["results"])
+
 
 event_controllers = EventControllers(controller_name="events", service=event_services)
