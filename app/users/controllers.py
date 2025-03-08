@@ -150,5 +150,9 @@ class UserControllers(BaseControllers):
             raise UsersErrorCode.OTPInvalid()
         return await self.service.verify_email(user_id=user["_id"])
 
+    async def export_users(self, commons: CommonsDependencies) -> dict:
+        data = await self.get_all(limit=self.max_record_limit, commons=commons)
+        return await self.service.export_users(data=data["results"])
+
 
 user_controllers = UserControllers(controller_name="users", service=user_services)

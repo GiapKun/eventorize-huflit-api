@@ -3,6 +3,7 @@ from datetime import datetime
 from core.schemas import CommonsDependencies
 from core.services import BaseServices
 from db.engine import app_engine
+from utils import converter
 
 from . import models, schemas
 from .config import settings
@@ -66,6 +67,11 @@ class OrderServices(BaseServices):
 
     async def get_total_buyers(self, start_date, end_date):
         return await self.crud.get_total_buyers(start_date=start_date, end_date=end_date)
+
+    # async def export_orders(self, data) -> dict:
+    #     date = self.get_current_datetime()
+    #     date_str = converter.convert_datetime_to_str(date)
+    #     filename = f"{date_str}-ReportOrders.xlsx"
 
 
 order_crud = OrdersCRUD(database_engine=app_engine, collection="orders")

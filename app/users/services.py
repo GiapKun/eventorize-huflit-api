@@ -1,12 +1,15 @@
+from io import BytesIO
 from typing import Any, Dict
 
+import xlsxwriter
 from auth.services import authentication_services
 from core.schemas import CommonsDependencies
 from core.services import BaseServices
 from db.base import BaseCRUD
 from db.engine import app_engine
+from fastapi import BackgroundTasks, Response
 from partners.v1.resend.services import user_mail_services
-from utils import calculator, value
+from utils import calculator, converter, value
 
 from . import models, schemas
 from .config import settings
@@ -175,6 +178,70 @@ class UserServices(BaseServices):
 
     async def get_total_users(self, start_date, end_date) -> int:
         return await self.get_all(query={"is_verified": True, "created_at": {"$gte": start_date, "$lte": end_date}})
+
+    async def export_users(self, data) -> dict:
+        date = self.get_current_datetime()
+        date_str = converter.convert_datetime_to_str(date)
+        filename = f"{date_str}-ReportUsers.xlsx"
+
+        buffer = BytesIO()
+        workbook = xlsxwriter.Workbook(buffer)
+        worksheet = workbook.add_worksheet("Users")
+
+        # Define styles
+        header_format = workbook.add_format({"bold": True, "bg_color": "#4F81BD", "color": "white", "align": "center", "valign": "vcenter", "border": 1})
+
+        cell_format = workbook.add_format({"align": "left", "valign": "vcenter", "border": 1})
+
+        date_format = workbook.add_format({"align": "left", "valign": "vcenter", "border": 1, "num_format": "yyyy-mm-dd hh:mm:ss"})
+
+        # Define necessary fields
+        fields = ["fullname", "email", "type", "is_verified", "phone", "company", "position", "city", "created_at"]
+
+        # Write headers
+        for col, field in enumerate(fields):
+            worksheet.write(0, col, field.replace("_", " ").title(), header_format)
+            worksheet.set_column(col, col, 20)  # Set column width
+
+        # Write data
+        for row, user in enumerate(data, start=1):
+            for col, field in enumerate(fields):
+                value = user.get(field, "")
+
+                # Handle datetime objects
+                if field == "created_at" and value:
+                    worksheet.write(row, col, value, date_format)
+                # Handle boolean values
+                elif field == "is_verified":
+                    worksheet.write(row, col, "Yes" if value else "No", cell_format)
+                # Handle other values
+                else:
+                    worksheet.write(row, col, value, cell_format)
+
+        # Add a summary section
+        summary_row = len(data) + 3
+        worksheet.write(summary_row, 0, "Total Users:", header_format)
+        worksheet.write(summary_row, 1, len(data), cell_format)
+
+        worksheet.write(summary_row + 1, 0, "Admin Users:", header_format)
+        worksheet.write(summary_row + 1, 1, len([u for u in data if u.get("type") == "admin"]), cell_format)
+
+        worksheet.write(summary_row + 2, 0, "Regular Users:", header_format)
+        worksheet.write(summary_row + 2, 1, len([u for u in data if u.get("type") == "user"]), cell_format)
+
+        worksheet.write(summary_row + 3, 0, "Verified Users:", header_format)
+        worksheet.write(summary_row + 3, 1, len([u for u in data if u.get("is_verified")]), cell_format)
+
+        # Close workbook and return response
+        workbook.close()
+        buffer.seek(0)
+
+        return Response(
+            buffer.getvalue(),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename={filename}"},
+            background=BackgroundTasks(buffer.close()),
+        )
 
 
 user_crud = BaseCRUD(database_engine=app_engine, collection="users")
