@@ -120,7 +120,7 @@ class OrdersCRUD(BaseCRUD):
     async def get_top_buyer(self, start_date, end_date, limit: int = 3):
         pipeline = [
             {"$match": {"created_at": {"$gte": start_date, "$lte": end_date}, "status": "active", "deleted_at": None}},
-            {"$group": {"_id": "$created_by", "total_amount": {"$sum": "$total_amount"}}},
+            {"$group": {"_id": "$created_by", "total_amount": {"$sum": "$total_amount"}, "orders": {"$sum": 1}}},  # Count number of orders
             {"$sort": {"total_amount": -1}},
             {"$limit": limit},
             # First, add a stage to check what the _id (created_by) values look like
@@ -130,7 +130,16 @@ class OrdersCRUD(BaseCRUD):
             # Lookup to users collection
             {"$lookup": {"from": "users", "localField": "convertedUserId", "foreignField": "_id", "as": "userInfo"}},
             {"$unwind": {"path": "$userInfo", "preserveNullAndEmptyArrays": True}},
-            {"$project": {"_id": 0, "user_id": "$_id", "user_name": "$userInfo.fullname", "user_email": "$userInfo.email", "total_amount": 1}},
+            {
+                "$project": {
+                    "_id": 0,
+                    "user_id": "$_id",
+                    "user_name": "$userInfo.fullname",
+                    "user_email": "$userInfo.email",
+                    "total_amount": 1,
+                    "orders": 1,  # Include order count in the projection
+                }
+            },
         ]
 
         results = await self.aggregate_by_pipeline(pipeline)
