@@ -7,6 +7,7 @@ class TopBuyerDetail(BaseModel):
     user_id: str
     user_name: str
     user_email: str
+    orders: int
     total_amount: float
 
 
