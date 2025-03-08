@@ -36,9 +36,9 @@ class RoutersCBV:
             return results
         return schemas.ListResponse(**results)
 
-    # @router.get("/orders/export", status_code=200)
-    # async def export_orders(self, start_date: DateStr = None, end_date: DateStr = None):
-    #     return await order_controllers.export_orders(start_date=start_date, end_date=end_date, commons=self.commons)
+    @router.get("/orders/export", status_code=200)
+    async def export_orders(self, start_date: DateStr = None, end_date: DateStr = None):
+        return await order_controllers.export_orders(start_date=start_date, end_date=end_date, commons=self.commons)
 
     @router.get("/orders/{_id}", status_code=200, responses={200: {"model": schemas.DetailsResponse, "description": "Get organizer success"}})
     async def get_detail(self, _id: ObjectIdStr, fields: str = None):
