@@ -193,6 +193,9 @@ class EventServices(BaseServices):
             background=BackgroundTasks(buffer.close()),
         )
 
+    async def get_event_by_organizer_id(self, organizer_id: str, commons: CommonsDependencies = None) -> list:
+        return await self.get_all(query={"organizer_id": organizer_id}, commons=commons)
+
 
 event_crud = EventCRUD(database_engine=app_engine, collection="events")
 event_services = EventServices(service_name="events", crud=event_crud)
