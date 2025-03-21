@@ -31,8 +31,8 @@ This repository contains all the backend logic, database interactions, and API e
 ### Cloning the Repository
 First, clone the repository from GitLab and navigate into the project directory:
 ```bash
-git clone https://github.com/ellyx13/eventorize-api.git
-cd eventorize-api
+git clone https://github.com/GiapKun/eventorize-huflit-api.git
+cd eventorize-huflit-api
 ```
 
 ### Setting Up the Environment
