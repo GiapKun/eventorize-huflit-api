@@ -35,9 +35,10 @@ jobs:
       - name: "Run tests"
         run: chmod +x bin/linux/test.sh && ./bin/linux/test.sh
 
-  build:
+  build-deploy:
     needs: test
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -46,65 +47,27 @@ jobs:
         working-directory: app
         run: docker build -t eventorize-api:latest -f Dockerfile.prod .
 
-      - name: Save Docker image
-        run: docker save eventorize-api:latest > eventorize-api.tar
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-image
-          path: eventorize-api.tar
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment: production
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image
-
       - name: Setup SSH
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -t rsa,ecdsa,ed25519 "$VPS_HOST" >> ~/.ssh/known_hosts
+          ssh-keyscan -t rsa,ecdsa,ed25519 "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Copy deployment files
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
+      - name: Save and transfer Docker image
         run: |
-          scp eventorize-api.tar $VPS_USERNAME@$VPS_HOST:~/
-          scp docker-compose-product.yml $VPS_USERNAME@$VPS_HOST:/root/eventorize-huflit-api/
+          docker save eventorize-api:latest | ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "cat > ~/eventorize-api.tar"
+          scp docker-compose-product.yml ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:/root/eventorize-huflit-api/
 
-      - name: Deploy to VPS
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
+      - name: Prepare environment and deploy
         run: |
           echo "${{ secrets.PROD_ENV }}" > prod.env
           echo "${{ secrets.DB_ENV }}" > db.env
-          ssh $VPS_USERNAME@$VPS_HOST "mkdir -p /root/eventorize-huflit-api/.env"
-          scp prod.env db.env $VPS_USERNAME@$VPS_HOST:/root/eventorize-huflit-api/.env/
-          ssh $VPS_USERNAME@$VPS_HOST << 'EOF'
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "mkdir -p /root/eventorize-huflit-api/.env"
+          scp prod.env db.env ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:/root/eventorize-huflit-api/.env/
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} << 'EOF'
             cd /root/eventorize-huflit-api
-            if [ ! -f ".env/prod.env" ] || [ ! -f ".env/db.env" ]; then
-              echo "ERROR: Environment files not found!"
-              ls -la .env/
-              exit 1
-            fi
             docker load < ~/eventorize-api.tar
             if docker-compose -f docker-compose-product.yml ps | grep api; then
               docker-compose -f docker-compose-product.yml stop api
@@ -113,6 +76,8 @@ jobs:
             docker-compose -f docker-compose-product.yml up -d api
             docker image prune -f
             rm ~/eventorize-api.tar
+
+            # Verify deployment
             if docker ps | grep eventorize-api; then
               echo "Deployment successful!"
             else
@@ -121,14 +86,3 @@ jobs:
               exit 1
             fi
           EOF
-
-      - name: Verify Deployment
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
-        run: |
-          ssh $VPS_USERNAME@$VPS_HOST "docker ps | grep eventorize-api" || {
-            echo "Deployment verification failed"
-            exit 1
-          }
-          echo "Deployment verified successfully"
