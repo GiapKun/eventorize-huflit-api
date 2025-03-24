@@ -55,7 +55,31 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -t rsa,ecdsa,ed25519 "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Save and transfer Docker image
+      - name: Check and update Docker Compose on VPS
+        run: |
+          ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} << 'EOF'
+            # Check Docker Compose version
+            if ! command -v docker-compose &> /dev/null; then
+              echo "Docker Compose not found, installing..."
+              curl -L "https://github.com/docker/compose/releases/download/v2.18.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+              chmod +x /usr/local/bin/docker-compose
+            else
+              COMPOSE_VERSION=$(docker-compose version --short)
+              echo "Current Docker Compose version: $COMPOSE_VERSION"
+
+              # Update if version is too old (optional)
+              if [[ "$COMPOSE_VERSION" < "1.29" ]]; then
+                echo "Updating Docker Compose..."
+                curl -L "https://github.com/docker/compose/releases/download/v2.18.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+                chmod +x /usr/local/bin/docker-compose
+              fi
+            fi
+
+            # Verify the version after potential update
+            docker-compose version
+          EOF
+
+      - name: Save and transfer Docker image and compose file
         run: |
           docker save eventorize-api:latest | ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "cat > ~/eventorize-api.tar"
           scp docker-compose-product.yml ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:/root/eventorize-huflit-api/
@@ -69,10 +93,15 @@ jobs:
           ssh ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} << 'EOF'
             cd /root/eventorize-huflit-api
             docker load < ~/eventorize-api.tar
+
+            # Check if docker-compose file is valid
+            docker-compose -f docker-compose-product.yml config > /dev/null
+
             if docker-compose -f docker-compose-product.yml ps | grep api; then
               docker-compose -f docker-compose-product.yml stop api
               docker-compose -f docker-compose-product.yml rm -f api
             fi
+
             docker-compose -f docker-compose-product.yml up -d api
             docker image prune -f
             rm ~/eventorize-api.tar
