@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile.prod # Use the production Dockerfile
     image: eventorize-api:latest
     restart: always
-    command: uvicorn main:app --reload --workers 2 --host 0.0.0.0 --port 8005
+    command: uvicorn main:app --workers 2 --host 0.0.0.0 --port 8005
     volumes:
       - ./logs/:/opt/projects/app/logs
     ports:
@@ -19,13 +19,14 @@ services:
       test:
         [
           "CMD",
-          "sh",
+          "python",
           "-c",
-          "curl -s -f http://localhost:8005/v1/health/ping || exit 1",
+          "import requests; requests.get('http://localhost:8005/v1/health/ping').raise_for_status()",
         ]
       interval: 60s
-      timeout: 3s
+      timeout: 10s
       retries: 3
+      start_period: 30s
     depends_on:
       - db
 
